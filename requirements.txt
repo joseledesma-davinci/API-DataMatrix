@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-treepoem
+pylibdmtx
 pillow
