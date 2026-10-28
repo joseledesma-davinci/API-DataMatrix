@@ -1,24 +1,27 @@
 import io
+import treepoem
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from pylibdmtx.pylibdmtx import encode
 from PIL import Image
 
 app = FastAPI(title="DataMatrix API")
 
 
-def generar_datamatrix(data: str, scale: int = 5, border: int = 2) -> bytes:
-    encoded = encode(data.encode("utf-8"))
-    img = Image.frombytes("RGB", (encoded.width, encoded.height), encoded.pixels)
+def generar_datamatrix(data: str, scale: int = 5) -> bytes:
+    img = treepoem.generate_barcode(
+        barcode_type="datamatrix",
+        data=data,
+    )
+    img = img.convert("RGB")
 
-    # Escalar y agregar zona de silencio (quiet zone)
-    img = img.resize((img.width * scale // 5 or 1, img.height * scale // 5 or 1), Image.NEAREST)
-    canvas = Image.new("RGB", (img.width + border * 2 * scale, img.height + border * 2 * scale), "white")
-    canvas.paste(img, (border * scale, border * scale))
+    # Escalar si se pide
+    if scale != 5:
+        w, h = img.size
+        img = img.resize((w * scale // 5, h * scale // 5), Image.NEAREST)
 
     buf = io.BytesIO()
-    canvas.save(buf, format="PNG")
+    img.save(buf, format="PNG")
     buf.seek(0)
     return buf.getvalue()
 
